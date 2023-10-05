@@ -6,24 +6,20 @@
 static const size_t MAXSTR = 1000; ///< max string lenght
 static const size_t MAXCMD = 10;   ///< max command name leght
 
-/// @brief Contains possible compilation issues
-enum cmd_error {
-    SUCCESS,
-    NO_ARG,
-    EXTRA_ARG,
-    UNKNOWN,
-};
-
-static cmd_error parse_cmd(const char *cmd, FILE *outptr);
+static cmd_error parse_cmd(const char *cmd, FILE *outp);
 
 int Assembly(const char *input, const char *output) {
+    return process_input(input, output, parse_cmd);
+}
+
+int process_input(const char *input, const char *output, cmd_error (*parse_cmd)(const char *cmd, FILE *outp)) {
     assert(input);
     assert(output);
 
-    FILE *inptr = fopen(input, "r");
-    FILE *outptr = fopen(output, "w");
+    FILE *inp = fopen(input, "r");
+    FILE *outp = fopen(output, "w");
 
-    if (!inptr || !outptr) {
+    if (!inp || !outp) {
         perror("VAssembler");
         return -1;
     }
@@ -32,9 +28,9 @@ int Assembly(const char *input, const char *output) {
     char cmd[MAXSTR] = {};
     size_t line_count = 0;
 
-    while (fgets(cmd, MAXSTR, inptr)) {
+    while (fgets(cmd, MAXSTR, inp)) {
         line_count++;
-        cmd_error err_code = parse_cmd(cmd, outptr);
+        cmd_error err_code = (*parse_cmd)(cmd, outp);
 
         if (err_code) {
             printf("VAssembler:");
@@ -61,9 +57,9 @@ int Assembly(const char *input, const char *output) {
     return errflag;
 }
 
-static cmd_error parse_cmd(const char *cmd, FILE *outptr) {
+static cmd_error parse_cmd(const char *cmd, FILE *outp) {
     assert(cmd);
-    assert(outptr);
+    assert(outp);
 
     char cmd_name[MAXCMD] = {};
 
@@ -85,11 +81,11 @@ static cmd_error parse_cmd(const char *cmd, FILE *outptr) {
                     return NO_ARG;
                 }
 
-                fprintf(outptr, "%d %lf\n", CMD_LIST[i].code, arg);
+                fprintf(outp, "%d %lf\n", CMD_LIST[i].code, arg);
                 return SUCCESS;
             }
 
-            fprintf(outptr, "%d\n", CMD_LIST[i].code);
+            fprintf(outp, "%d\n", CMD_LIST[i].code);
             return SUCCESS;
         }
     }

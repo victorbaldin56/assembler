@@ -11,12 +11,21 @@
 #define ON_DEBUG(x)
 #endif
 
+enum cmd_error {
+    SUCCESS,
+    NO_ARG,
+    EXTRA_ARG,
+    UNKNOWN,
+};
+
 int Assembly(const char *input, const char *output);
 
+int process_input(const char *input, const char *output, cmd_error (*parse_cmd)(const char *cmd, FILE *outp));
+
 typedef struct {
-    int code;     ///< digital code
-    char *name;   ///< name of the command
-    size_t nargs; ///< number of inline args
+    int code;           ///< digital code
+    const char *name;   ///< name of the command
+    size_t nargs;       ///< number of inline args
 } Command;
 
 const Command CMD_LIST[] = {
