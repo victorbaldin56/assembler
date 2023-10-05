@@ -9,6 +9,9 @@ static const size_t MAXCMD = 10;   ///< max command name leght
 static cmd_error parse_cmd(const char *cmd, FILE *outp);
 
 int Assembly(const char *input, const char *output) {
+    assert(input);
+    assert(output);
+
     return process_input(input, output, parse_cmd);
 }
 
