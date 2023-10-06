@@ -1,10 +1,10 @@
-# VAssembler
+# assembler
 Compiler for simplified assembler-like language. Translates the following
 commands to the bytecode compatible with my [VM_CPU](https://github.com/victorbaldin56/VM_CPU).
 
 ## Usage
 ### Build
-1. `git clone https://github.com/victorbaldin56/VAssembler`
+1. `git clone https://github.com/victorbaldin56/assembler`
 2. `make`
 
 ### Supported commands
