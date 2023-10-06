@@ -21,11 +21,11 @@ BUILD_DIR = ./build
 SRC_DIRS = ./src
 SRC = $(wildcard $(SRC_DIRS)/*.cpp)
 OBJS := $(SRC:%.cpp=$(BUILD_DIR)/%.cpp.o)
-INCLUDE_DIR = ~/Dev/VAssembler/include  # to be changed
+INCLUDE_DIR = ~/Dev/assembler/include  # to be changed
 # LIB = stack.a 					# to be changed
 # L_DIR = ~/Dev/Stack/build/src/	# to be changed
 
-EXEC = vasm
+EXEC = asm
 
 $(BUILD_DIR)/$(EXEC): $(OBJS)
 	@$(CC) $(OBJS) $(FLAGS) -o $@ -I $(INCLUDE_DIR)
