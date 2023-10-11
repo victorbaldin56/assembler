@@ -27,6 +27,7 @@
 # Folders with logs, objs and execs
 logs
 build
+*.swp
 
 # Folder with docs
 html

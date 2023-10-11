@@ -11,8 +11,8 @@ int main(int argc, char *argv[]) {
     }
 
     if (argc == 4 && !strcmp("-o", argv[3])) {
-        return Assembly(argv[1], argv[3]);
+        return Assemble(argv[1], argv[3]);
     }
 
-    return Assembly(argv[1], "a.out");
+    return Assemble(argv[1], "a.out");
 }

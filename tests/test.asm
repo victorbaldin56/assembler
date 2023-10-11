@@ -5,5 +5,6 @@ push 700
 push 100
 div
 sub
+sqrt
 out
-hlt
+halt

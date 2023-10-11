@@ -24,16 +24,17 @@ OBJS := $(SRC:%.cpp=$(BUILD_DIR)/%.cpp.o)
 INCLUDE_DIR = ~/Dev/assembler/include  # to be changed
 # LIB = stack.a 					# to be changed
 # L_DIR = ~/Dev/Stack/build/src/	# to be changed
+VM_INCLUDE = ~/Dev/VM_CPU/include
 
 EXEC = asm
 
 $(BUILD_DIR)/$(EXEC): $(OBJS)
-	@$(CC) $(OBJS) $(FLAGS) -o $@ -I $(INCLUDE_DIR)
+	@$(CC) $(OBJS) $(FLAGS) -o $@ -I $(INCLUDE_DIR) -I $(VM_INCLUDE)
 
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	@mkdir -p $(BUILD_DIR)
 	@mkdir -p $(BUILD_DIR)/$(SRC_DIRS)
-	@$(CC) $(FLAGS) $(FLAGS) -c $< -o $@ -I $(INCLUDE_DIR)
+	@$(CC) $(FLAGS) $(FLAGS) -c $< -o $@ -I $(INCLUDE_DIR) -I $(VM_INCLUDE)
 
 .PHONY: clean
 
@@ -41,4 +42,5 @@ clean:
 	@rm -rf $(BUILD_DIR)
 
 run:
-	@./$(BUILD_DIR)/$(EXEC)
+	@./$(BUILD_DIR)/$(EXEC) tests/test.txt
+	../VM_CPU/build/processor a.out
