@@ -1,8 +1,9 @@
 in ; input
 ;out
 pop rax
-push rax
-out
+;push rax
+;out
+;jmp 0
 
 in
 pop rbx
@@ -16,16 +17,16 @@ pop rcx
 
 push rbx
 push rbx
-mult
+mul
 ;out
 
 push rax
 push rcx
-mult
+mul
 ;out
 
 push 4
-mult
+mul
 
 sub
 

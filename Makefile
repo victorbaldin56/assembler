@@ -13,7 +13,7 @@ FLAGS = -D _DEBUG -ggdb3 -std=c++17 -O0 -Wall -Wextra -Weffc++ -Waggressive-loop
 	-Wno-old-style-cast -Wno-varargs -Wstack-protector -fcheck-new -fsized-deallocation \
 	-fstack-protector -fstrict-overflow -flto-odr-type-merging -fno-omit-frame-pointer \
 	-Wlarger-than=8192 -Wstack-usage=8192 -pie -fPIE -Werror=vla \
-	-fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero, \
+	-fsanitize=address,bool,bounds,enum,float-cast-overflow,float-divide-by-zero, \
 	# integer-divide-by-zero,leak,nonnull-attribute,null,object-size,return,returns-nonnull-attribute, \
 	# shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
 
@@ -25,11 +25,14 @@ INCLUDE_DIR = ~/Dev/assembler/include  # to be changed
 # LIB = stack.a 					# to be changed
 # L_DIR = ~/Dev/Stack/build/src/	# to be changed
 VM_INCLUDE = ~/Dev/VM_CPU/include
+CODE_CTOR = ~/Dev/VM_CPU/build/src/codector.cpp.o
+CODE_DUMP = ~/Dev/VM_CPU/build/src/codedump.cpp.o
+
 
 EXEC = asm
 
 $(BUILD_DIR)/$(EXEC): $(OBJS)
-	@$(CC) $(OBJS) $(FLAGS) -o $@ -I $(INCLUDE_DIR) -I $(VM_INCLUDE)
+	@$(CC) $(OBJS) $(CODE_CTOR) $(CODE_DUMP) $(FLAGS) -o $@ -I $(INCLUDE_DIR) -I $(VM_INCLUDE)
 
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	@mkdir -p $(BUILD_DIR)
@@ -42,5 +45,5 @@ clean:
 	@rm -rf $(BUILD_DIR)
 
 run:
-	@./$(BUILD_DIR)/$(EXEC) tests/test.txt
+	@./$(BUILD_DIR)/$(EXEC) tests/reg_test.asm
 	../VM_CPU/build/processor a.out

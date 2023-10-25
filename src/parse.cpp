@@ -1,10 +1,13 @@
-#include "parse.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <stddef.h>
+#include <stdio.h>
+#include "codector.h"
+#include "parse.h"
 
 LineArray *ParseBuf(char *buf, LineArray *text) {
     assert(buf);
@@ -14,20 +17,19 @@ LineArray *ParseBuf(char *buf, LineArray *text) {
 
     text->lines = (char **)calloc(text->size, sizeof(void *));
 
-    if (!text->lines) {
-        return NULL;
-    }
+    if (!text->lines) return NULL;
 
     for (size_t lp = 0; lp < text->size; lp++) {
         text->lines[lp] = buf;
         char *newbuf = strchr(buf, '\n');
-
         // there are no more '\n'
-        if (!newbuf) {
-            break;
-        }
-
+        if (!newbuf) break;
         *newbuf = '\0';
+
+        char *comment = strchr(buf, ';');
+
+        if (comment) *comment = '\0'; // commenting code in asm
+
         buf = newbuf + 1;
     }
 
@@ -37,18 +39,13 @@ LineArray *ParseBuf(char *buf, LineArray *text) {
 char *ReadFile(const char *filename) {
     assert(filename);
 
-    ssize_t bufsiz = fsize(filename) + 1;
+    size_t bufsiz = (size_t)(fsize(filename) + 1);
 
-    if (bufsiz <= 0) {
-        perror("ReadFile");
-        return NULL;
-    }
+    if (!bufsiz) return NULL;
 
     char *buf = (char *)calloc(bufsiz, 1);
 
-    if (!buf) {
-        return NULL;
-    }
+    if (!buf) return NULL;
 
     int fd = open(filename, O_RDONLY, 0);
     read(fd, buf, bufsiz);
