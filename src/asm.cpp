@@ -140,6 +140,18 @@ static cmd_error compile_cmd(char *cmd, Code *codearr, size_t *ip) {
 
 #undef DEF_CMD
 
+#define EmitImm_(codearr, ip, imm)                          \
+    if (EmitImm(codearr, ip, imm) != 0) {                   \
+        ON_DEBUG(fprintf(stderr, "EmitImm failure\n"));     \
+        return EMIT_FAILURE;                                \
+    }
+
+#define EmitReg_(codearr, ip, imm)                          \
+    if (EmitReg(codearr, ip, regnum) != 0) {                \
+        ON_DEBUG(fprintf(stderr, "EmitReg failure\n"));     \
+        return EMIT_FAILURE;                                \
+    }
+
 static cmd_error compile_args(const char *cmd, Code *codearr, size_t *ip) {
     assert(cmd);
     assert(codearr);
@@ -147,31 +159,30 @@ static cmd_error compile_args(const char *cmd, Code *codearr, size_t *ip) {
     assert(ip);
 
     double imm = 0;
+    unsigned char regch = '\0';
 
     if (sscanf(cmd, "%*s %lf", &imm) > 0) {
-        if (EmitImm(codearr, ip, imm) != 0) {
-            ON_DEBUG(fprintf(stderr, "EmitImm failure\n"));
-            return EMIT_FAILURE;
-        }
+        codearr->code[*ip] |= IMM;
+        (*ip)++;
+        EmitImm_(codearr, ip, imm);
 
         ON_DEBUG(fprintf(stderr, "%lf\n", imm));
         return NO_ERR;
     }
 
-    unsigned char regch = '\0';
+    else if (sscanf(cmd, "%*s r%cx", &regch) > 0) {
+        codearr->code[*ip] |= REG;
+        unsigned char regnum = regch - 'a' + 1;
 
-    if (sscanf(cmd, "%*s r%cx", &regch) > 0) {
-        unsigned char regnum = regch - 'a';
+        (*ip)++;
+        EmitReg_(codearr, ip, regnum);
 
-        ON_DEBUG(fprintf(stderr, "%hhu\n", regnum));
-
-        if (regnum >= NUM_REGS) return INCORRECT_ARG;
-
-        if (EmitReg(codearr, ip, regnum) != 0) {
-            ON_DEBUG(fprintf(stderr, "EmitReg failure\n"));
-            return EMIT_FAILURE;
+        if (sscanf(cmd, "%*s %*s + %lf", &imm) > 0) {
+            codearr->code[*ip - 2] |= IMM;
+            EmitImm_(codearr, ip, imm);
         }
 
+        ON_DEBUG(fprintf(stderr, "%hhu\n", regnum));
         return NO_ERR;
     }
 

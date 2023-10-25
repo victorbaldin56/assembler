@@ -35,11 +35,7 @@ int EmitImm(Code *codearr, size_t *ip, double imm) {
     CODE_ASSERT(codearr);
     assert(ip);
 
-    ON_DEBUG(fprintf(stderr, "EmitImm: *ip = %zu\n", *ip));
-
-    codearr->code[*ip] |= IMM;
-
-    (*ip)++;
+    ON_DEBUG(fprintf(stderr, "EmitImm: imm = %lf, *ip = %zu\n", imm, *ip));
 
     while (*ip + sizeof(double) >= codearr->size) {
         if (!CodeRealloc(codearr, COEFF)) return -1;
@@ -55,13 +51,11 @@ int EmitReg(Code *codearr, size_t *ip, unsigned char regnum) {
     CODE_ASSERT(codearr);
     assert(ip);
 
-    codearr->code[*ip] |= REG;
-
     if (*ip >= codearr->size - 1) {
         if (!CodeRealloc(codearr, COEFF)) return -1;
     }
 
-    codearr->code[++(*ip)] = regnum;
+    codearr->code[*ip] = regnum;
     (*ip)++;
 
     return 0;

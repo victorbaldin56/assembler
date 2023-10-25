@@ -15,13 +15,16 @@ pop rcx
 ;push rbx
 ;out
 
-push rbx
-push rbx
+push rbx + 2
+;out
+push rbx + 2
+;out
 mul
 ;out
 
-push rax
-push rcx
+push rax + 1
+;out
+push rcx + 1
 mul
 ;out
 
