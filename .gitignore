@@ -28,6 +28,7 @@
 logs
 build
 *.swp
+.vscode
 
 # Folder with docs
 html

@@ -35,6 +35,7 @@ sub
 
 pop  [5]
 push [5]
+sqrt
 out
 
 hlt
