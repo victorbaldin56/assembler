@@ -33,8 +33,8 @@ mul
 
 sub
 
-pop  [5]
-push [5]
+pop  [rax + 5]
+push [rax + 5]
 sqrt
 out
 

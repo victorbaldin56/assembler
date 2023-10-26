@@ -145,7 +145,7 @@ static cmd_error compile_cmd(char *cmd, Code *codearr, size_t *ip) {
         return EMIT_FAILURE;                                \
     }
 
-#define EmitReg_(codearr, ip, imm)                          \
+#define EmitReg_(codearr, ip, regnum)                       \
     if (EmitReg(codearr, ip, regnum) != 0) {                \
         ON_DEBUG(fprintf(stderr, "EmitReg failure\n"));     \
         return EMIT_FAILURE;                                \
@@ -170,22 +170,37 @@ static cmd_error compile_args(const char *cmd, Code *codearr, size_t *ip) {
 
     else if (sscanf(cmd, "%*s r%cx", &regch) > 0) {
         codearr->code[*ip] |= REG;
-        unsigned char regnum = regch - 'a' + 1;
-
         (*ip)++;
-        EmitReg_(codearr, ip, regnum);
+        EmitReg_(codearr, ip, regch - 'a' + 1);
 
-        if (sscanf(cmd, "%*s %*s + %lf", &imm) > 0) {
+        if (sscanf(cmd, "%*s %*1[[]s %*s + %lf", &imm) > 0) {
             codearr->code[*ip - 2] |= IMM;
             EmitImm_(codearr, ip, imm);
         }
 
-        ON_DEBUG(fprintf(stderr, "%hhu\n", regnum));
         return NO_ERR;
     }
 
     else if (sscanf(cmd, "%*s [ %lf ]", &imm) > 0) {
         codearr->code[*ip] |= (RAM | IMM);
+        (*ip)++;
+        EmitImm_(codearr, ip, imm);
+
+        return NO_ERR;
+    }
+
+    else if (sscanf(cmd, "%*s [ r%cx ]", &regch) > 0) {
+        codearr->code[*ip] |= (RAM | REG);
+        (*ip)++;
+        EmitReg_(codearr, ip, regch - 'a' + 1);
+
+        return NO_ERR;
+    }
+
+    else if (sscanf(cmd, "%*s [ r%cx + %lf ]", &regch, &imm)) {
+        codearr->code[*ip] |= (RAM | REG | IMM);
+        (*ip)++;
+        EmitReg_(codearr, ip, regch - 'a' + 1);
         (*ip)++;
         EmitImm_(codearr, ip, imm);
 
