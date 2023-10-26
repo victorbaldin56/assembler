@@ -3,7 +3,7 @@ in ; input
 pop rax
 ;push rax
 ;out
-;jmp 0
+;jmp rax + -5
 
 in
 pop rbx
@@ -15,16 +15,16 @@ pop rcx
 ;push rbx
 ;out
 
-push rbx + 2
+push rbx
 ;out
-push rbx + 2
+push rbx
 ;out
 mul
 ;out
 
-push rax + 1
+push rax
 ;out
-push rcx + 1
+push rcx
 mul
 ;out
 
@@ -33,6 +33,8 @@ mul
 
 sub
 
+pop  [5]
+push [5]
 out
 
 hlt

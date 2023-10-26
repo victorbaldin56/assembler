@@ -121,8 +121,7 @@ asm_error Assemble(const char *inp_filename, const char *outp_filename) {
 
 static cmd_error compile_cmd(char *cmd, Code *codearr, size_t *ip) {
     assert(cmd);
-    assert(codearr);
-    assert(codearr->code);
+    CODE_ASSERT(codearr);
     assert(ip);
 
     char cmd_name[MAXCMD] = {};
@@ -154,8 +153,7 @@ static cmd_error compile_cmd(char *cmd, Code *codearr, size_t *ip) {
 
 static cmd_error compile_args(const char *cmd, Code *codearr, size_t *ip) {
     assert(cmd);
-    assert(codearr);
-    assert(codearr->code);
+    CODE_ASSERT(codearr);
     assert(ip);
 
     double imm = 0;
@@ -183,6 +181,14 @@ static cmd_error compile_args(const char *cmd, Code *codearr, size_t *ip) {
         }
 
         ON_DEBUG(fprintf(stderr, "%hhu\n", regnum));
+        return NO_ERR;
+    }
+
+    else if (sscanf(cmd, "%*s [ %lf ]", &imm) > 0) {
+        codearr->code[*ip] |= (RAM | IMM);
+        (*ip)++;
+        EmitImm_(codearr, ip, imm);
+
         return NO_ERR;
     }
 
