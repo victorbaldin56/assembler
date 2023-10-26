@@ -6,7 +6,8 @@
 #include "writecode.h"
 #include "codedump.h"
 
-static const size_t COEFF = 4;
+static const size_t COEFF = 2;
+static const size_t SIGNSIZ = 6; ///< size of signature
 
 void WriteCode(Code *codearr, int outp_fd) {
     CODE_ASSERT(codearr);
@@ -59,4 +60,15 @@ int EmitReg(Code *codearr, size_t *ip, unsigned char regnum) {
     (*ip)++;
 
     return 0;
+}
+
+void WriteSign(Code *codearr, size_t *ip) {
+    CODE_ASSERT(codearr);
+    assert(ip);
+
+    *(int32_t *)codearr->code = SIGNATURE;
+    (*ip) += sizeof(int32_t);
+
+    codearr->code[*ip] = VERSION;
+    (*ip)++;
 }

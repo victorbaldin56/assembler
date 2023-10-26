@@ -57,6 +57,8 @@ asm_error Assemble(const char *inp_filename, const char *outp_filename) {
 
     size_t ip = 0;
 
+    WriteSign(&codearr, &ip);
+
     for (size_t lp = 0; lp < text.size; lp++) {
         switch (compile_cmd(text.lines[lp], &codearr, &ip)) {
             case NO_ERR:
@@ -156,6 +158,8 @@ static cmd_error compile_args(const char *cmd, Code *codearr, size_t *ip) {
     CODE_ASSERT(codearr);
     assert(ip);
 
+    size_t pos = *ip;
+
     double imm = 0;
     unsigned char regch = '\0';
 
@@ -173,7 +177,7 @@ static cmd_error compile_args(const char *cmd, Code *codearr, size_t *ip) {
         (*ip)++;
         EmitReg_(codearr, ip, regch - 'a' + 1);
 
-        if (sscanf(cmd, "%*s %*1[[]s %*s + %lf", &imm) > 0) {
+        if (sscanf(cmd, "%*s %*s + %lf", &imm) > 0) {
             codearr->code[*ip - 2] |= IMM;
             EmitImm_(codearr, ip, imm);
         }
@@ -194,10 +198,15 @@ static cmd_error compile_args(const char *cmd, Code *codearr, size_t *ip) {
         (*ip)++;
         EmitReg_(codearr, ip, regch - 'a' + 1);
 
+        if (sscanf(cmd, "%*s [ %*s + %lf ]", &imm) > 0) {
+            EmitImm_(codearr, ip, imm);
+            codearr->code[pos] |= IMM;
+        }
+
         return NO_ERR;
     }
 
-    else if (sscanf(cmd, "%*s [ r%cx + %lf ]", &regch, &imm)) {
+/*    else if (sscanf(cmd, "%*s [ r%cx + %lf ]", &regch, &imm)) {
         codearr->code[*ip] |= (RAM | REG | IMM);
         (*ip)++;
         EmitReg_(codearr, ip, regch - 'a' + 1);
@@ -205,7 +214,7 @@ static cmd_error compile_args(const char *cmd, Code *codearr, size_t *ip) {
         EmitImm_(codearr, ip, imm);
 
         return NO_ERR;
-    }
+    }*/
 
     return INCORRECT_ARG;
 }

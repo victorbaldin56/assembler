@@ -12,4 +12,6 @@ int EmitImm(Code *codearr, size_t *ip, double imm);
 
 int EmitReg(Code *codearr, size_t *ip, unsigned char regnum);
 
+void WriteSign(Code *codearr, size_t *ip);
+
 #endif
