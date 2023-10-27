@@ -5,14 +5,6 @@
 #include <limits.h>
 #include "codector.h"
 
-#define DEBUG
-
-#ifdef DEBUG
-#define ON_DEBUG(x) x
-#else
-#define ON_DEBUG(x)
-#endif
-
 #define ASM_RAISE_ERR(msg)                                                          \
     fprintf(stderr, FG_RED);                                                        \
     fprintf(stderr, "error: file %s, line %zu: %s\n", inp_filename, lp, msg);       \

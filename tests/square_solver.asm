@@ -1,4 +1,3 @@
-start:
 in
 pop rax
 
@@ -56,6 +55,5 @@ div
 
 out
 
-jmp start:
-
-hlt
+halt:
+    hlt

@@ -70,7 +70,7 @@ AsmError Assemble(const char *inp_filename, const char *outp_filename) {
         write(outp_fd, codearr.code, codearr.size);
     }
 
-    free(text.lines);
+    free(text.lines); // TODO macros
     free(buf);
 
     CodeDtor(&codearr);
@@ -88,6 +88,15 @@ static AsmError compilation_run(LineArray *text, Code *codearr, const char *inp_
     WriteSign(codearr);
 
     Labels labels = {};
+
+    for (size_t lp = 0; lp < text->size; lp++) {
+        compile_cmd(text->lines[lp], codearr, &ip, &labels);
+    }
+
+    ON_DEBUG(fprintf(stderr, "label = %s, addr = %lf\n", labels.names[0], labels.addrs[0]));
+
+    ip = SIGNATURE_SIZE;
+    labels.count = 0;
 
     for (size_t lp = 0; lp < text->size; lp++) {
         switch (compile_cmd(text->lines[lp], codearr, &ip, &labels)) {
@@ -133,6 +142,8 @@ static AsmError compilation_run(LineArray *text, Code *codearr, const char *inp_
         }
     }
 
+    ON_DEBUG(fprintf(stderr, "label = %s, addr = %zx\n", labels.names[0], (size_t)labels.addrs[0]));
+
     return SUCCESS;
 }
 
@@ -161,6 +172,7 @@ static CmdError compile_cmd(char *cmd, Code *codearr, size_t *ip, Labels *labels
         if (strchr(cmd_name, ':')) {
             if (push_label(labels, cmd_name, ip) != 0) return NUM_LABELS_EXCEED;
 
+            ON_DEBUG(fprintf(stderr, "label = %s\n", cmd_name));
             return NO_ERR;
         }
 
@@ -236,12 +248,12 @@ static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip, Labels 
     }
 
     else if (sscanf(cmd, "%*s r%cx", &regch) > 0) {
-        codearr->code[*ip] |= REG;
+        codearr->code[pos] |= REG;
         (*ip)++;
         EmitReg_(codearr, ip, regch - 'a' + 1);
 
         if (sscanf(cmd, "%*s %*s + %lf", &imm) > 0) {
-            codearr->code[*ip - 2] |= IMM;
+            codearr->code[pos] |= IMM;
             EmitImm_(codearr, ip, imm);
         }
 
@@ -249,21 +261,20 @@ static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip, Labels 
     }
 
     else if (sscanf(cmd, "%*s [ %lf ]", &imm) > 0) {
-        codearr->code[*ip] |= (RAM | IMM);
+        codearr->code[pos] |= (RAM | IMM);
         (*ip)++;
         EmitImm_(codearr, ip, imm);
-
         return NO_ERR;
     }
 
     else if (sscanf(cmd, "%*s [ r%cx ]", &regch) > 0) {
-        codearr->code[*ip] |= (RAM | REG);
+        codearr->code[pos] |= (RAM | REG);
         (*ip)++;
         EmitReg_(codearr, ip, regch - 'a' + 1);
 
         if (sscanf(cmd, "%*s [ %*s + %lf ]", &imm) > 0) {
-            EmitImm_(codearr, ip, imm);
             codearr->code[pos] |= IMM;
+            EmitImm_(codearr, ip, imm);
         }
 
         return NO_ERR;
@@ -275,12 +286,14 @@ static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip, Labels 
 
     if (sscanf(cmd, "j%*s %s", label) > 0) {
         double addr = find_label(labels, label);
-
-        if (!isfinite(addr)) return LABEL_NOT_FOUND;
+        ON_DEBUG(fprintf(stderr, "label address = %0zx\n", (size_t)addr));
 
         codearr->code[pos] |= IMM;
         (*ip)++;
         EmitImm_(codearr, ip, addr);
+
+        if (!isfinite(addr)) return LABEL_NOT_FOUND;
+
         return NO_ERR;
     }
 
