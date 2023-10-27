@@ -45,5 +45,5 @@ clean:
 	@rm -rf $(BUILD_DIR)
 
 run:
-	@./$(BUILD_DIR)/$(EXEC) tests/reg_test.asm
-	../VM_CPU/build/processor a.out
+	@./$(BUILD_DIR)/$(EXEC) tests/square_solver.asm -o tests/square_solver.bin
+	../VM_CPU/build/processor tests/square_solver.bin

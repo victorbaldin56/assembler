@@ -14,7 +14,10 @@
 #endif
 
 #define ASM_RAISE_ERR(msg)                                                          \
+    fprintf(stderr, FG_RED);                                                        \
     fprintf(stderr, "error: file %s, line %zu: %s\n", inp_filename, lp, msg);       \
+    fprintf(stderr, "  %zu | %s\n", lp, text->lines[lp]);                           \
+    fprintf(stderr, RESET);                                                         \
     return ASSEMBLE_FAILURE;
 
 enum CmdError {
@@ -24,6 +27,7 @@ enum CmdError {
     UNKNOWN,
     EMIT_FAILURE,
     NUM_LABELS_EXCEED,
+    LABEL_NOT_FOUND,
 };
 
 enum AsmError {

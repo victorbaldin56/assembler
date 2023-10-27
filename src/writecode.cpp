@@ -54,13 +54,9 @@ int EmitReg(Code *codearr, size_t *ip, unsigned char regnum) {
     return 0;
 }
 
-void WriteSign(Code *codearr, size_t *ip) {
+void WriteSign(Code *codearr) {
     CODE_ASSERT(codearr);
-    assert(ip);
 
     *(int32_t *)codearr->code = SIGNATURE;
-    (*ip) += sizeof(int32_t);
-
-    codearr->code[*ip] = VERSION;
-    (*ip)++;
+    codearr->code[sizeof(int32_t)] = VERSION;
 }

@@ -1,3 +1,4 @@
+start:
 in ; input
 ;out
 pop rax
@@ -36,7 +37,9 @@ sub
 pop [rax + 5]
 ;out
 push [rax + 5]
-sqrt
+;sqrt
 out
+
+jmp start:
 
 hlt

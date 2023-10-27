@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <limits.h>
+#include <math.h>
 #include "asm.h"
 #include "codector.h"
 #include "writecode.h"
@@ -23,7 +24,9 @@ static CmdError compile_cmd(char *cmd, Code *codearr, size_t *ip, Labels *labels
 
 static int push_label(Labels *labels, const char *label, size_t *ip);
 
-static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip);
+static double find_label(Labels *labels, const char *label);
+
+static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip, Labels *labels);
 
 static AsmError compilation_run(LineArray *text, Code *codearr, const char *inp_filename);
 
@@ -80,9 +83,9 @@ static AsmError compilation_run(LineArray *text, Code *codearr, const char *inp_
     assert(text);
     assert(inp_filename);
 
-    size_t ip = 0;
+    size_t ip = SIGNATURE_SIZE;
 
-    WriteSign(codearr, &ip);
+    WriteSign(codearr);
 
     Labels labels = {};
 
@@ -118,6 +121,11 @@ static AsmError compilation_run(LineArray *text, Code *codearr, const char *inp_
                 ASM_RAISE_ERR("max number of labels exceed");
             }
 
+            case LABEL_NOT_FOUND:
+            {
+                ASM_RAISE_ERR("label not found");
+            }
+
             default:
             {
                 ASM_RAISE_ERR("unknown command");
@@ -126,20 +134,6 @@ static AsmError compilation_run(LineArray *text, Code *codearr, const char *inp_
     }
 
     return SUCCESS;
-}
-
-static int push_label(Labels *labels, const char *label, size_t *ip) {
-    assert(labels);
-    assert(label);
-    assert(ip);
-
-    if (labels->count >= NUM_LABELS) return -1;
-
-    strncpy(labels->names[labels->count], label, LABEL_LENGHT);
-    labels->addrs[labels->count] = (double)(*ip);
-    labels->count++;
-
-    return 0;
 }
 
 #define DEF_CMD(name, opcode, has_arg, ...)             \
@@ -152,7 +146,7 @@ static int push_label(Labels *labels, const char *label, size_t *ip) {
             return NO_ERR;                              \
         }                                               \
                                                         \
-        return compile_args(cmd, codearr, ip);          \
+        return compile_args(cmd, codearr, ip, labels);  \
     }
 
 static CmdError compile_cmd(char *cmd, Code *codearr, size_t *ip, Labels *labels) {
@@ -161,15 +155,15 @@ static CmdError compile_cmd(char *cmd, Code *codearr, size_t *ip, Labels *labels
     assert(ip);
     assert(labels);
 
-    char label[LABEL_LENGHT] = {};
-
-    if (sscanf(cmd, "%s :", label) > 0) {
-        if (push_label(labels, label, ip) != 0) return NUM_LABELS_EXCEED;
-    }
-
     char cmd_name[MAXCMD] = {};
 
     if (sscanf(cmd, "%s", cmd_name) > 0) {
+        if (strchr(cmd_name, ':')) {
+            if (push_label(labels, cmd_name, ip) != 0) return NUM_LABELS_EXCEED;
+
+            return NO_ERR;
+        }
+
         ON_DEBUG(fprintf(stderr, "%s | ", cmd));
 
         #include "commands.h"
@@ -194,10 +188,38 @@ static CmdError compile_cmd(char *cmd, Code *codearr, size_t *ip, Labels *labels
         return EMIT_FAILURE;                                \
     }
 
-static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip) {
+static int push_label(Labels *labels, const char *label, size_t *ip) {
+    assert(labels);
+    assert(label);
+    assert(ip);
+
+    if (labels->count >= NUM_LABELS) return -1;
+
+    strncpy(labels->names[labels->count], label, LABEL_LENGHT);
+    labels->addrs[labels->count] = (double)(*ip) - SIGNATURE_SIZE;
+    labels->count++;
+
+    return 0;
+}
+
+static double find_label(Labels *labels, const char *label) {
+    assert(labels);
+    assert(label);
+
+    for (size_t lcount = 0; lcount < NUM_LABELS; lcount++) {
+        if (!strcmp(label, labels->names[lcount])) {
+            return labels->addrs[lcount];
+        }
+    }
+
+    return NAN;
+}
+
+static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip, Labels *labels) {
     assert(cmd);
     CODE_ASSERT(codearr);
     assert(ip);
+    assert(labels);
 
     size_t pos = *ip;
 
@@ -244,6 +266,21 @@ static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip) {
             codearr->code[pos] |= IMM;
         }
 
+        return NO_ERR;
+    }
+
+    // if all this doesnt work, search for label
+
+    char label[LABEL_LENGHT] = {};
+
+    if (sscanf(cmd, "j%*s %s", label) > 0) {
+        double addr = find_label(labels, label);
+
+        if (!isfinite(addr)) return LABEL_NOT_FOUND;
+
+        codearr->code[pos] |= IMM;
+        (*ip)++;
+        EmitImm_(codearr, ip, addr);
         return NO_ERR;
     }
 

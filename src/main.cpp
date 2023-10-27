@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    if (argc == 4 && !strcmp("-o", argv[3])) {
+    if (argc == 4 && !strcmp("-o", argv[2])) {
         return Assemble(argv[1], argv[3]);
     }
 
