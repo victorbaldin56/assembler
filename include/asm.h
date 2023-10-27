@@ -13,19 +13,20 @@
 #define ON_DEBUG(x)
 #endif
 
-#define ERR_MESSAGE(file, line, msg, err_flag)                            \
-    fprintf(stderr, "error: file %s, line %zu: %s\n", file, line, msg);   \
-    err_flag = ASSEMBLE_FAILURE;
+#define ASM_RAISE_ERR(msg)                                                          \
+    fprintf(stderr, "error: file %s, line %zu: %s\n", inp_filename, lp, msg);       \
+    return ASSEMBLE_FAILURE;
 
-enum cmd_error {
+enum CmdError {
     NO_ERR,
     NO_ARG,
     INCORRECT_ARG,
     UNKNOWN,
     EMIT_FAILURE,
+    NUM_LABELS_EXCEED,
 };
 
-enum asm_error {
+enum AsmError {
     SUCCESS,
     BUF_ALLOC_FAILURE,
     LINEARR_ALLOC_FAILURE,
@@ -33,16 +34,18 @@ enum asm_error {
     ASSEMBLE_FAILURE,
 };
 
-asm_error Assemble(const char *input, const char *output);
+const size_t NUM_LABELS = 256;                     ///< max number of labels
 
-const size_t CMDSIZ = sizeof(double);               ///< size of each command in bytes
-const size_t INIT_CODE_SIZE = 16;                   ///< initial size of code array
+const size_t LABEL_LENGHT = 16;
 
 typedef struct {
-    char opcode;         ///< operation code
-    const char *name;    ///< name of the command
-    unsigned char imm;   ///< can command has immediate constant argument
-    unsigned char reg;   ///< can command has register argument
-} Command;
+    char names[NUM_LABELS][LABEL_LENGHT] = {{}};
+    double addrs[NUM_LABELS] = {};
+    size_t count;
+} Labels;
+
+AsmError Assemble(const char *input, const char *output);
+
+const size_t INIT_CODE_SIZE = 16;                   ///< initial size of code array
 
 #endif // VASM

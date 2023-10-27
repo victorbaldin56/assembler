@@ -7,14 +7,6 @@
 #include "codedump.h"
 
 static const size_t COEFF = 2;
-static const size_t SIGNSIZ = 6; ///< size of signature
-
-void WriteCode(Code *codearr, int outp_fd) {
-    CODE_ASSERT(codearr);
-    assert(outp_fd >= 0);
-
-    write(outp_fd, codearr->code, codearr->size);
-}
 
 int EmitByte(Code *codearr, size_t *ip, unsigned char cmd_code) {
     CODE_ASSERT(codearr);

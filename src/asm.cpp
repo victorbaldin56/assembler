@@ -19,11 +19,15 @@ static const int PERMS = 0777;                            ///< permissions for c
 
 static const size_t MAXSTR = 1000;                        ///< max string lenght
 
-static cmd_error compile_cmd(char *cmd, Code *codearr, size_t *ip);
+static CmdError compile_cmd(char *cmd, Code *codearr, size_t *ip, Labels *labels);
 
-static cmd_error compile_args(const char *cmd, Code *codearr, size_t *ip);
+static int push_label(Labels *labels, const char *label, size_t *ip);
 
-asm_error Assemble(const char *inp_filename, const char *outp_filename) {
+static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip);
+
+static AsmError compilation_run(LineArray *text, Code *codearr, const char *inp_filename);
+
+AsmError Assemble(const char *inp_filename, const char *outp_filename) {
     assert(inp_filename);
     assert(outp_filename);
 
@@ -46,59 +50,22 @@ asm_error Assemble(const char *inp_filename, const char *outp_filename) {
 
     CodeCtor(&codearr, INIT_CODE_SIZE);
 
-    int outp_fd = creat(outp_filename, PERMS);
+    AsmError err_flag = compilation_run(&text, &codearr, inp_filename);
 
-    if (outp_fd < 0) {
-        perror("Assemble");
-        return FILE_CREAT_FAILURE;
+    if (err_flag != SUCCESS) {
+        remove(outp_filename);
     }
 
-    asm_error err_flag = SUCCESS;
+    else {
+        int outp_fd = creat(outp_filename, PERMS);
 
-    size_t ip = 0;
-
-    WriteSign(&codearr, &ip);
-
-    for (size_t lp = 0; lp < text.size; lp++) {
-        switch (compile_cmd(text.lines[lp], &codearr, &ip)) {
-            case NO_ERR:
-            {
-                break;
-            }
-
-            case INCORRECT_ARG:
-            {
-                ERR_MESSAGE(inp_filename, lp, "incorrect argument", err_flag);
-                break;
-            }
-
-            case NO_ARG:
-            {
-                ERR_MESSAGE(inp_filename, lp, "argument expected", err_flag);
-                break;
-            }
-
-            case UNKNOWN:
-            {
-                ERR_MESSAGE(inp_filename, lp, "unknown command", err_flag);
-                break;
-            }
-
-            case EMIT_FAILURE:
-            {
-                ERR_MESSAGE(inp_filename, lp, "crash due to memory limit", err_flag);
-                break;
-            }
-
-            default:
-            {
-                ERR_MESSAGE(inp_filename, lp, "unknown command", err_flag);
-                break;
-            }
+        if (outp_fd < 0) {
+            perror("Assemble");
+            return FILE_CREAT_FAILURE;
         }
-    }
 
-    WriteCode(&codearr, outp_fd);
+        write(outp_fd, codearr.code, codearr.size);
+    }
 
     free(text.lines);
     free(buf);
@@ -106,6 +73,73 @@ asm_error Assemble(const char *inp_filename, const char *outp_filename) {
     CodeDtor(&codearr);
 
     return err_flag;
+}
+
+static AsmError compilation_run(LineArray *text, Code *codearr, const char *inp_filename) {
+    CODE_ASSERT(codearr);
+    assert(text);
+    assert(inp_filename);
+
+    size_t ip = 0;
+
+    WriteSign(codearr, &ip);
+
+    Labels labels = {};
+
+    for (size_t lp = 0; lp < text->size; lp++) {
+        switch (compile_cmd(text->lines[lp], codearr, &ip, &labels)) {
+            case NO_ERR:
+            {
+                break;
+            }
+
+            case INCORRECT_ARG:
+            {
+                ASM_RAISE_ERR("incorrect argument");
+            }
+
+            case NO_ARG:
+            {
+                ASM_RAISE_ERR("argument expected");
+            }
+
+            case UNKNOWN:
+            {
+                ASM_RAISE_ERR("unknown command");
+            }
+
+            case EMIT_FAILURE:
+            {
+                ASM_RAISE_ERR("crash due to memory limit");
+            }
+
+            case NUM_LABELS_EXCEED:
+            {
+                ASM_RAISE_ERR("max number of labels exceed");
+            }
+
+            default:
+            {
+                ASM_RAISE_ERR("unknown command");
+            }
+        }
+    }
+
+    return SUCCESS;
+}
+
+static int push_label(Labels *labels, const char *label, size_t *ip) {
+    assert(labels);
+    assert(label);
+    assert(ip);
+
+    if (labels->count >= NUM_LABELS) return -1;
+
+    strncpy(labels->names[labels->count], label, LABEL_LENGHT);
+    labels->addrs[labels->count] = (double)(*ip);
+    labels->count++;
+
+    return 0;
 }
 
 #define DEF_CMD(name, opcode, has_arg, ...)             \
@@ -121,10 +155,17 @@ asm_error Assemble(const char *inp_filename, const char *outp_filename) {
         return compile_args(cmd, codearr, ip);          \
     }
 
-static cmd_error compile_cmd(char *cmd, Code *codearr, size_t *ip) {
+static CmdError compile_cmd(char *cmd, Code *codearr, size_t *ip, Labels *labels) {
     assert(cmd);
     CODE_ASSERT(codearr);
     assert(ip);
+    assert(labels);
+
+    char label[LABEL_LENGHT] = {};
+
+    if (sscanf(cmd, "%s :", label) > 0) {
+        if (push_label(labels, label, ip) != 0) return NUM_LABELS_EXCEED;
+    }
 
     char cmd_name[MAXCMD] = {};
 
@@ -153,7 +194,7 @@ static cmd_error compile_cmd(char *cmd, Code *codearr, size_t *ip) {
         return EMIT_FAILURE;                                \
     }
 
-static cmd_error compile_args(const char *cmd, Code *codearr, size_t *ip) {
+static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip) {
     assert(cmd);
     CODE_ASSERT(codearr);
     assert(ip);
@@ -205,16 +246,6 @@ static cmd_error compile_args(const char *cmd, Code *codearr, size_t *ip) {
 
         return NO_ERR;
     }
-
-/*    else if (sscanf(cmd, "%*s [ r%cx + %lf ]", &regch, &imm)) {
-        codearr->code[*ip] |= (RAM | REG | IMM);
-        (*ip)++;
-        EmitReg_(codearr, ip, regch - 'a' + 1);
-        (*ip)++;
-        EmitImm_(codearr, ip, imm);
-
-        return NO_ERR;
-    }*/
 
     return INCORRECT_ARG;
 }
