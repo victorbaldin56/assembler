@@ -21,6 +21,14 @@ mul
 
 sub; counting D = b^2 - 4*a*c
 
+pop rdx
+
+push rdx
+push 0
+
+ja halt:
+
+push rdx
 sqrt
 
 pop rdx
