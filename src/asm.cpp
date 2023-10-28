@@ -169,7 +169,11 @@ static CmdError compile_cmd(char *cmd, Code *codearr, size_t *ip, Labels *labels
     char cmd_name[MAXCMD] = {};
 
     if (sscanf(cmd, "%s", cmd_name) > 0) {
-        if (strchr(cmd_name, ':')) {
+        char *label_end = strchr(cmd_name, ':');
+
+        if (label_end) {
+            *label_end = '\0';
+
             if (push_label(labels, cmd_name, ip) != 0) return NUM_LABELS_EXCEED;
 
             ON_DEBUG(fprintf(stderr, "label = %s\n", cmd_name));
@@ -284,7 +288,7 @@ static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip, Labels 
 
     char label[LABEL_LENGHT] = {};
 
-    if (sscanf(cmd, "j%*s %s", label) > 0) {
+    if (sscanf(cmd, " j%*s %s", label) > 0) {
         double addr = find_label(labels, label);
         ON_DEBUG(fprintf(stderr, "label address = %0zx\n", (size_t)addr));
 

@@ -1,3 +1,21 @@
+jmp main
+
+; Linear equation case
+Linear:
+    push rbx
+    push 0
+    je halt ; if b == 0
+
+    push 0
+    push rcx
+    sub
+
+    push rbx
+    div
+    out
+    jmp halt
+
+main:
 in
 pop rax
 
@@ -6,6 +24,11 @@ pop rbx
 
 in
 pop rcx
+
+push rax
+push 0
+je Linear
+
 
 push rbx
 push rbx
@@ -26,7 +49,7 @@ pop rdx
 push rdx
 push 0
 
-ja halt:
+ja halt ; if D < 0
 
 push rdx
 sqrt
