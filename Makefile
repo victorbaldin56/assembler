@@ -44,6 +44,10 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 clean:
 	@rm -rf $(BUILD_DIR)
 
-run:
-	@./$(BUILD_DIR)/$(EXEC) tests/square_solver.asm -o tests/square_solver.bin
+square:
+	./$(BUILD_DIR)/$(EXEC) tests/square_solver.asm -o tests/square_solver.bin
 	../VM_CPU/build/processor tests/square_solver.bin
+
+fact:
+	./$(BUILD_DIR)/$(EXEC) tests/factorial.asm -o tests/factorial.bin
+	../VM_CPU/build/processor tests/factorial.bin

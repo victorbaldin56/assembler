@@ -13,8 +13,7 @@
 #include "parse.h"
 #include "colors.h"
 
-static const size_t MAXCMD = 10;
-static const size_t MAXREG = 4;
+static const size_t MAXCMD = 16;
 
 static const int PERMS = 0777;                            ///< permissions for created file
 
@@ -168,7 +167,7 @@ static CmdError compile_cmd(char *cmd, Code *codearr, size_t *ip, Labels *labels
 
     char cmd_name[MAXCMD] = {};
 
-    if (sscanf(cmd, "%s", cmd_name) > 0) {
+    if (sscanf(cmd, "%15s", cmd_name) > 0) {
         char *label_end = strchr(cmd_name, ':');
 
         if (label_end) {
@@ -193,12 +192,18 @@ static CmdError compile_cmd(char *cmd, Code *codearr, size_t *ip, Labels *labels
 #undef DEF_CMD
 
 #define EmitImm_(codearr, ip, imm)                          \
+    codearr->code[pos] |= IMM;                              \
+    (*ip)++;                                                \
+                                                            \
     if (EmitImm(codearr, ip, imm) != 0) {                   \
         ON_DEBUG(fprintf(stderr, "EmitImm failure\n"));     \
         return EMIT_FAILURE;                                \
     }
 
 #define EmitReg_(codearr, ip, regnum)                       \
+    codearr->code[pos] |= REG;                              \
+    (*ip)++;                                                \
+                                                            \
     if (EmitReg(codearr, ip, regnum) != 0) {                \
         ON_DEBUG(fprintf(stderr, "EmitReg failure\n"));     \
         return EMIT_FAILURE;                                \
@@ -243,8 +248,6 @@ static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip, Labels 
     unsigned char regch = '\0';
 
     if (sscanf(cmd, "%*s %lf", &imm) > 0) {
-        codearr->code[*ip] |= IMM;
-        (*ip)++;
         EmitImm_(codearr, ip, imm);
 
         ON_DEBUG(fprintf(stderr, "%lf\n", imm));
@@ -252,12 +255,10 @@ static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip, Labels 
     }
 
     else if (sscanf(cmd, "%*s r%cx", &regch) > 0) {
-        codearr->code[pos] |= REG;
-        (*ip)++;
         EmitReg_(codearr, ip, regch - 'a' + 1);
 
         if (sscanf(cmd, "%*s %*s + %lf", &imm) > 0) {
-            codearr->code[pos] |= IMM;
+            (*ip)--;
             EmitImm_(codearr, ip, imm);
         }
 
@@ -265,19 +266,17 @@ static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip, Labels 
     }
 
     else if (sscanf(cmd, "%*s [ %lf ]", &imm) > 0) {
-        codearr->code[pos] |= (RAM | IMM);
-        (*ip)++;
+        codearr->code[pos] |= RAM;
         EmitImm_(codearr, ip, imm);
         return NO_ERR;
     }
 
     else if (sscanf(cmd, "%*s [ r%cx ]", &regch) > 0) {
-        codearr->code[pos] |= (RAM | REG);
-        (*ip)++;
+        codearr->code[pos] |= RAM;
         EmitReg_(codearr, ip, regch - 'a' + 1);
 
         if (sscanf(cmd, "%*s [ %*s + %lf ]", &imm) > 0) {
-            codearr->code[pos] |= IMM;
+            (*ip)--;
             EmitImm_(codearr, ip, imm);
         }
 
@@ -288,12 +287,10 @@ static CmdError compile_args(const char *cmd, Code *codearr, size_t *ip, Labels 
 
     char label[LABEL_LENGHT] = {};
 
-    if (sscanf(cmd, " j%*s %s", label) > 0) {
+    if (sscanf(cmd, " j%*s %s", label) > 0 || sscanf(cmd, " call %s", label) > 0) {
         double addr = find_label(labels, label);
         ON_DEBUG(fprintf(stderr, "label address = %0zx\n", (size_t)addr));
 
-        codearr->code[pos] |= IMM;
-        (*ip)++;
         EmitImm_(codearr, ip, addr);
 
         if (!isfinite(addr)) return LABEL_NOT_FOUND;

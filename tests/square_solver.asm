@@ -15,76 +15,79 @@ Linear:
     out
     jmp halt
 
+Discr: ; counting D = b^2 - 4*a*c
+    push rbx
+    push rbx
+    mul
+
+    push rax
+    push rcx
+    mul
+
+    push 4
+    mul
+
+    sub
+
+    ret
+
 main:
-in
-pop rax
+    in
+    pop rax
 
-in
-pop rbx
+    in
+    pop rbx
 
-in
-pop rcx
+    in
+    pop rcx
 
-push rax
-push 0
-je Linear
+    push rax
+    push 0
+    je Linear
 
+    call Discr
 
-push rbx
-push rbx
-mul
+    pop rdx
 
-push rax
-push rcx
-mul
+    push rdx
+    push 0
 
-push 4
+    ja halt ; if D < 0
 
-mul
+    push rdx
+    sqrt
 
-sub; counting D = b^2 - 4*a*c
+    pop rdx
+    push rdx
 
-pop rdx
+    push rbx
+    push -1
+    mul
+    pop rcx
+    push rcx
 
-push rdx
-push 0
+    add
 
-ja halt ; if D < 0
+    push 2
+    push rax
+    mul
+    pop rax
+    push rax
 
-push rdx
-sqrt
+    div
 
-pop rdx
-push rdx
+    out
 
-push rbx
-push -1
-mul
-pop rcx
-push rcx
+    push rcx
 
-add
+    push rdx
 
-push 2
-push rax
-mul
-pop rax
-push rax
+    sub
+    push rax
 
-div
+    div
 
-out
-
-push rcx
-
-push rdx
-
-sub
-push rax
-
-div
-
-out
+    out
 
 halt:
     hlt
